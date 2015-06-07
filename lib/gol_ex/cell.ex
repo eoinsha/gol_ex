@@ -5,23 +5,31 @@ defmodule Cell do
   Starts a cell process, returning the PID
   """
   def start(x, y) do
-    spawn fn -> loop(x, y, false, []) end
+    spawn fn -> loop(0, x, y, false, []) end
   end 
 
-  def loop(x, y, state, neighbours, num_alive \\ 0) do
+  def loop(iteration, x, y, state, neighbours, num_alive \\ 0) do
+    IO.inspect {iteration, "CELL", x, y, state}
     receive do
       {:setup, init_state, neighbours} -> 
-        loop(x, y, init_state, neighbours, num_alive)
-      {:neighbour_state, _neighbour, new_state} -> 
-        if new_state do num_alive_now = num_alive + 1 else num_alive_now = num_alive - 1 end
-        loop(x, y, get_state(state, num_alive_now), neighbours, num_alive_now)
+        update_state(neighbours, init_state)
+        loop(iteration + 1, x, y, init_state, neighbours, num_alive)
+      {:neighbour_state, _neighbour, state} -> 
+        if state do num_alive_now = num_alive + 1 else num_alive_now = num_alive - 1 end
+        loop(iteration + 1, x, y, step_state(state, num_alive_now, neighbours), neighbours, num_alive_now)
     end 
   end
 
-  mdef get_state do
-    true, neighbours_alive when neighbours_alive == 2 or neighbours_alive == 3 -> true
-    true, _ -> false
-    false, 3 -> true
-    false, _ -> false     
+  mdef step_state do
+    true, neighbours_alive, _ when neighbours_alive == 2 or neighbours_alive == 3 -> true
+    true, _, neighbours -> update_state(neighbours, false)
+    false, 3, neighbours -> update_state(neighbours, true) 
+    false, _, _ -> false     
   end
+
+  defp update_state(neighbours, new_state) do
+    neighbours |> Enum.each fn(neighbour) -> send neighbour, {:neighbour_state, self(), new_state} end
+    new_state
+  end
+
 end
