@@ -1,35 +1,56 @@
 defmodule Cell do
   import MultiDef
 
+  defmodule State do
+    defstruct x: nil, y: nil, alive: false, neighbours: nil, iter: 0
+  end
+
   @doc """
   Starts a cell process, returning the PID
   """
   def start(x, y) do
-    spawn fn -> loop(0, x, y, false, []) end
+    spawn fn -> loop(%State{x: x, y: y}) end
   end 
 
-  def loop(iteration, x, y, state, neighbours, num_alive \\ 0) do
-    IO.inspect {iteration, "CELL", x, y, state}
+  def loop(state) do
+    IO.inspect {"CELL", state}
     receive do
-      {:setup, init_state, neighbours} -> 
-        update_state(neighbours, init_state)
-        loop(iteration + 1, x, y, init_state, neighbours, num_alive)
-      {:neighbour_state, _neighbour, state} -> 
-        if state do num_alive_now = num_alive + 1 else num_alive_now = num_alive - 1 end
-        loop(iteration + 1, x, y, step_state(state, num_alive_now, neighbours), neighbours, num_alive_now)
+      {:setup, alive, neighbours} -> 
+        %{state | iter: 1, alive: alive, neighbours: Enum.map(neighbours, fn(cell) -> {cell, nil} end)}
+          |> update_state
+          |> loop
+      {:neighbour_state, neighbour, alive} -> 
+        %{state | iter: state.iter + 1, neighbours: %{state.neighbours | alive: alive}} 
+          |> step_state
+          |> loop
     end 
   end
 
-  mdef step_state do
-    true, neighbours_alive, _ when neighbours_alive == 2 or neighbours_alive == 3 -> true
-    true, _, neighbours -> update_state(neighbours, false)
-    false, 3, neighbours -> update_state(neighbours, true) 
-    false, _, _ -> false     
+  defp step_state(state) do
+    neighbour_states = 
+      state.neighbours |> Map.values |> Enum.reduce([alive: 0, dead: 0, unknown: 0], fn(n, acc) -> 
+        case n do
+          nil -> acc ++ [unknown: acc[:unknown] + 1]
+          true -> acc ++ [alive: acc[:alive] + 1]
+          false -> acc ++ [dead: acc[:dead] + 1]
+        end 
+      end)
+    
+    if neighbour_states[:unknown] == 0 do # Wait until all neighbours have sent their state
+      case {state.alive, neighbour_states[:alive]} do
+        {true, num_alive} when num_alive == 2 or num_alive == 3 -> state
+        {true, _} -> update_state(%{state | alive: false})
+        {false, 3} -> update_state(%{state | alive: true})
+        {false, _} -> state 
+      end
+    else 
+      state  
+    end
   end
 
-  defp update_state(neighbours, new_state) do
-    neighbours |> Enum.each fn(neighbour) -> send neighbour, {:neighbour_state, self(), new_state} end
-    new_state
+  defp update_state(state) do
+    state.neighbours |> Map.keys |> Enum.each fn(neighbour) -> send neighbour, {:neighbour_state, self(), state.alive} end
+    state
   end
 
 end
