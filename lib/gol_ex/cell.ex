@@ -19,7 +19,6 @@ defmodule Cell do
           |> update_state(parent)
           |> loop(parent)
       {:neighbour_state, neighbour, alive} -> 
-        #IO.inspect{self(), "Got", alive, "from", neighbour, "neighbours", state.neighbours}
         %{state | iter: state.iter + 1, neighbours: Map.put(state.neighbours, neighbour, alive)} 
           |> step_state(parent)
           |> loop(parent)
@@ -35,7 +34,6 @@ defmodule Cell do
           false -> Keyword.put(acc, :dead, acc[:dead] + 1)
         end 
       end)
-    #IO.puts "[#{state.x},#{state.y}-#{state.alive}] unknowns- #{neighbour_states[:unknown]}, alive- #{neighbour_states[:alive]}"
 
     if neighbour_states[:unknown] == 0 do # Wait until all neighbours have sent their state
       case {state.alive, neighbour_states[:alive]} do
@@ -50,13 +48,10 @@ defmodule Cell do
   end
 
   defp update_state(state, parent) do
-    #IO.puts "#{state.x},#{state.y} -> #{state.alive}"
-    IO.puts "#{state.x},#{state.y}: Sending state #{state.alive} to parent #{inspect parent}"
     send parent, {:state_change, state.x, state.y, state.alive}
     state.neighbours |> Map.keys |> Enum.each fn(neighbour) -> 
-      #IO.inspect {self(),"#{state.x},#{state.y} Sending #{state.alive} to neighbour", neighbour}
       send neighbour, {:neighbour_state, self(), state.alive} end
-      :timer.sleep(100)
+      :timer.sleep(2000)
     state
   end
 

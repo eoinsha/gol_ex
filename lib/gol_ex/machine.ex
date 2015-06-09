@@ -1,8 +1,8 @@
 defmodule Machine do
   use GenServer
 
-  @width 4
-  @height 4
+  @width 40
+  @height 40
   @tick_interval 500
 
   def start_link do
@@ -10,7 +10,7 @@ defmodule Machine do
   end
 
   def handle_info({:state_change, x, y, alive}, state) do
-    IO.puts "Broadcasting state change #{x},#{y}, #{alive}"
+    IO.puts "Sending #{x}.#{y}:#{alive}"
     GolEx.Endpoint.broadcast("world:updates", "gol:state", %{x: x, y: y, alive: alive})
     {:noreply, state}
   end
@@ -47,7 +47,7 @@ defmodule Machine do
     for y <- 0..h-1 do
       for x <- 0..w-1 do
         neighbours=find_neighbours(x, y, world) 
-        alive = :random.uniform(2) == 2  
+        alive = :random.uniform(3) != 1  
         world |> get_cell(x,y) |> init_cell(alive, neighbours)
       end
     end
