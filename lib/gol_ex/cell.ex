@@ -15,13 +15,19 @@ defmodule Cell do
   def loop(state, parent) do
     receive do
       {:setup, alive, neighbours} -> 
-        %{state | iter: 1, alive: alive, neighbours: Enum.map(neighbours, fn(cell) -> {cell, nil} end) |> Enum.into %{}}
+        %{state | iter: 1, alive: alive, neighbours: Enum.map(neighbours, fn(cell) -> {cell, Map.get(state.neighbours, cell)} end) |> Enum.into %{}}
           |> update_state(parent)
           |> loop(parent)
-      {:neighbour_state, neighbour, alive} -> 
-        %{state | iter: state.iter + 1, neighbours: Map.put(state.neighbours, neighbour, alive)} 
+      {:neighbour_state, neighbour, alive} ->
+        nn = Map.put(state.neighbours, neighbour, alive)
+        #IO.puts "#{inspect self} got state from #{inspect neighbour}. Now #{inspect nn}" 
+        %{state | iter: state.iter + 1, neighbours: nn} 
           |> step_state(parent)
           |> loop(parent)
+      {:tick} ->
+        state 
+        |> step_state(parent)
+        |> loop(parent)
     end 
   end
 
@@ -51,7 +57,7 @@ defmodule Cell do
     send parent, {:state_change, state.x, state.y, state.alive}
     state.neighbours |> Map.keys |> Enum.each fn(neighbour) -> 
       send neighbour, {:neighbour_state, self(), state.alive} end
-      :timer.sleep(2000)
+    :timer.sleep(200)
     state
   end
 
