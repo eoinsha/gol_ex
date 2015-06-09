@@ -18,8 +18,9 @@ defmodule GolEx do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: GolEx.Supervisor]
+    {:ok, state} = Supervisor.start_link(children, opts)
     create_world
-    Supervisor.start_link(children, opts)
+    {:ok, state}
   end
 
   # Tell Phoenix to update the endpoint configuration
@@ -35,7 +36,7 @@ defmodule GolEx do
   end
 
   defp create_world do
-    {:ok, world} = Machine.start
+    {:ok, world} = Machine.start_link
     Process.register(world, :world)
   end
 end

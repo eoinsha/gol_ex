@@ -1,14 +1,18 @@
 defmodule Machine do
   use GenServer
 
-  @width 10
-  @height 10
+  @width 4
+  @height 4
   @tick_interval 500
 
-  def start do
-    {:ok, pid} = GenServer.start(__MODULE__, [])
-    :timer.send_interval(@tick_interval, pid, :tick)
-    {:ok, pid}
+  def start_link do
+    GenServer.start_link(__MODULE__, [])
+  end
+
+  def handle_info({:state_change, x, y, alive}, state) do
+    IO.puts "Broadcasting state change #{x},#{y}, #{alive}"
+    GolEx.Endpoint.broadcast("world:updates", "gol:state", %{x: x, y: y, alive: alive})
+    {:noreply, state}
   end
 
   def get_world(pid) do
@@ -19,7 +23,7 @@ defmodule Machine do
     :random.seed(:erlang.now)
     world = create_world(@width, @height)
     init_world(@width, @height, world)
-    {:ok, true}
+    {:ok, %{}}
   end
 
   def create_world(w, h) do
@@ -54,7 +58,7 @@ defmodule Machine do
   end
 
   defp create_cell(x, y) do
-    Cell.start(x, y)
+    Cell.start(self, x, y)
   end
 
   defp init_cell(cell_pid, alive, neighbours) do

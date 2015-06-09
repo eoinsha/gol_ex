@@ -11,7 +11,7 @@ socket.connect()
 let chan = socket.chan("world:updates", {})
 chan.on("gol:state", payload => {
 	console.log("gol", payload)
-	App.draw(payload)
+	// App.draw(payload)
 })	
 chan.join().receive("ok", () => {
 	console.log("Joined Channel")

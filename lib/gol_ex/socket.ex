@@ -1,14 +1,14 @@
 defmodule GolSocket do
-  def run(world, socket) do
-    loop(world, socket)
+  def run(topic, socket) do
+    loop(socket)
   end
 
-  def loop(world, socket) do
+  def loop(socket) do
     receive do
       {:state_change, x, y, alive} ->
         Phoenix.Channel.push socket, "gol:state", {x, y, alive}
       _ -> :ok
     end
-    loop(world, socket)
+    loop(socket)
   end
 end

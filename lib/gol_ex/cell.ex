@@ -8,25 +8,25 @@ defmodule Cell do
   @doc """
   Starts a cell process, returning the PID
   """
-  def start(x, y) do
-    spawn_link fn -> loop(%State{x: x, y: y}) end
+  def start(parent, x, y) do
+    spawn_link fn -> loop(%State{x: x, y: y}, parent) end
   end 
 
-  def loop(state) do
+  def loop(state, parent) do
     receive do
       {:setup, alive, neighbours} -> 
         %{state | iter: 1, alive: alive, neighbours: Enum.map(neighbours, fn(cell) -> {cell, nil} end) |> Enum.into %{}}
-          |> update_state
-          |> loop
+          |> update_state(parent)
+          |> loop(parent)
       {:neighbour_state, neighbour, alive} -> 
         #IO.inspect{self(), "Got", alive, "from", neighbour, "neighbours", state.neighbours}
         %{state | iter: state.iter + 1, neighbours: Map.put(state.neighbours, neighbour, alive)} 
-          |> step_state
-          |> loop
+          |> step_state(parent)
+          |> loop(parent)
     end 
   end
 
-  defp step_state(state) do
+  defp step_state(state, parent) do
     neighbour_states = 
       state.neighbours |> Map.values |> Enum.reduce([alive: 0, dead: 0, unknown: 0], fn(n, acc) -> 
         case n do
@@ -40,8 +40,8 @@ defmodule Cell do
     if neighbour_states[:unknown] == 0 do # Wait until all neighbours have sent their state
       case {state.alive, neighbour_states[:alive]} do
         {true, num_alive} when num_alive == 2 or num_alive == 3 -> state
-        {true, _} -> update_state(%{state | alive: false})
-        {false, 3} -> update_state(%{state | alive: true})
+        {true, _} -> update_state(%{state | alive: false}, parent)
+        {false, 3} -> update_state(%{state | alive: true}, parent)
         {false, _} -> state 
       end
     else 
@@ -49,8 +49,10 @@ defmodule Cell do
     end
   end
 
-  defp update_state(state) do
+  defp update_state(state, parent) do
     #IO.puts "#{state.x},#{state.y} -> #{state.alive}"
+    IO.puts "#{state.x},#{state.y}: Sending state #{state.alive} to parent #{inspect parent}"
+    send parent, {:state_change, state.x, state.y, state.alive}
     state.neighbours |> Map.keys |> Enum.each fn(neighbour) -> 
       #IO.inspect {self(),"#{state.x},#{state.y} Sending #{state.alive} to neighbour", neighbour}
       send neighbour, {:neighbour_state, self(), state.alive} end

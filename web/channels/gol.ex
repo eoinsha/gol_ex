@@ -1,9 +1,10 @@
 defmodule GolEx.GolChannel do
   use Phoenix.Channel
 
-  def join("world:updates", _, socket) do
+  @topic "world:updates"
+  def join(@topic, _, socket) do
     IO.puts("JOIN!")
-#    send(self(), :after_join)
+    send(self(), :after_join)
     {:ok, socket}
   end
 
@@ -12,7 +13,7 @@ defmodule GolEx.GolChannel do
   end
 
   def handle_info(:after_join, socket) do
-    spawn(fn() -> GolSocket.run(socket) end)
+    spawn(fn() -> GolSocket.run(@topic, socket) end)
     {:noreply, socket}
   end
 end
