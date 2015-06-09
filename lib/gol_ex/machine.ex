@@ -1,18 +1,18 @@
 defmodule Machine do
   use GenServer
 
-  @width 40
-  @height 40
+  @width 50
+  @height 50
   @tick_interval 500
 
   def start_link do
     {:ok, pid} = GenServer.start_link(__MODULE__, [])
-#    :timer.send_interval(@tick_interval, pid, :tick)
+    :timer.send_interval(@tick_interval, pid, :tick)
     {:ok, pid}
   end
 
   def handle_info({:state_change, x, y, alive}, world) do
-    IO.puts "Sending #{x}.#{y}:#{alive}"
+    #IO.puts "Sending #{x}.#{y}:#{alive}"
     GolEx.Endpoint.broadcast("world:updates", "gol:state", %{x: x, y: y, alive: alive})
     {:noreply, world}
   end

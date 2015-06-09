@@ -19,10 +19,7 @@ defmodule Cell do
           |> update_state(parent)
           |> loop(parent)
       {:neighbour_state, neighbour, alive} ->
-        nn = Map.put(state.neighbours, neighbour, alive)
-        #IO.puts "#{inspect self} got state from #{inspect neighbour}. Now #{inspect nn}" 
-        %{state | iter: state.iter + 1, neighbours: nn} 
-          |> step_state(parent)
+        %{state | iter: state.iter + 1, neighbours: Map.put(state.neighbours, neighbour, alive)} 
           |> loop(parent)
       {:tick} ->
         state 
