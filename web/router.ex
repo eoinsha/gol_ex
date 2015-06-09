@@ -1,6 +1,10 @@
 defmodule GolEx.Router do
   use GolEx.Web, :router
 
+  socket "/ws", GolEx do
+    channel "world:*", GolChannel 
+  end
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
