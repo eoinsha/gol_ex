@@ -18,6 +18,7 @@ defmodule GolEx do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: GolEx.Supervisor]
+    create_world
     Supervisor.start_link(children, opts)
   end
 
@@ -26,5 +27,15 @@ defmodule GolEx do
   def config_change(changed, _new, removed) do
     GolEx.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  def restart_world do
+    Process.unregister(:world)
+    create_world
+  end
+
+  defp create_world do
+    {:ok, world} = Machine.start
+    Process.register(world, :world)
   end
 end

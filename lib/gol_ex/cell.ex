@@ -50,10 +50,11 @@ defmodule Cell do
   end
 
   defp update_state(state) do
-    IO.puts "#{state.x},#{state.y} -> #{state.alive}"
+    #IO.puts "#{state.x},#{state.y} -> #{state.alive}"
     state.neighbours |> Map.keys |> Enum.each fn(neighbour) -> 
       #IO.inspect {self(),"#{state.x},#{state.y} Sending #{state.alive} to neighbour", neighbour}
       send neighbour, {:neighbour_state, self(), state.alive} end
+      :timer.sleep(100)
     state
   end
 

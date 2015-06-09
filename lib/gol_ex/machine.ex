@@ -1,8 +1,8 @@
 defmodule Machine do
   use GenServer
 
-  @width 100
-  @height 100
+  @width 10
+  @height 10
   @tick_interval 500
 
   def start do
